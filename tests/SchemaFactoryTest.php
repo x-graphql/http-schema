@@ -66,13 +66,11 @@ type Query {
   dummy: String!
 }
 GQL;
-        $cacheKey = (string)crc32($sdl);
-
-        $this->assertFalse($cache->has($cacheKey));
+        $this->assertFalse($cache->has(SchemaFactory::SDL_CACHE_KEY));
 
         $schema = $instance->fromSDL($sdl);
 
-        $this->assertTrue($cache->has($cacheKey));
+        $this->assertTrue($cache->has(SchemaFactory::SDL_CACHE_KEY));
         $this->assertInstanceOf(Schema::class, $schema);
 
         $schemaFromCache = $instance->fromSDL($sdl);
@@ -94,13 +92,12 @@ GQL;
         $executor = new QueryExecutor('POST', 'https://countries.trevorblades.com/');
         $cache = new Psr16Cache(new ArrayAdapter());
         $instance = new SchemaFactory($executor, $cache);
-        $cacheKey = (string)crc32(Introspection::getIntrospectionQuery());
 
-        $this->assertFalse($cache->has($cacheKey));
+        $this->assertFalse($cache->has(SchemaFactory::INTROSPECTION_QUERY_CACHE_KEY));
 
         $schema = $instance->fromIntrospectionQuery();
 
-        $this->assertTrue($cache->has($cacheKey));
+        $this->assertTrue($cache->has(SchemaFactory::INTROSPECTION_QUERY_CACHE_KEY));
         $this->assertInstanceOf(Schema::class, $schema);
 
         $schemaFromCache = $instance->fromIntrospectionQuery();
