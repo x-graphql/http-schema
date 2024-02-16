@@ -132,14 +132,17 @@ final class RootFieldsResolver
     {
         $data = $result['data'] ?? [];
         $errors = $result['errors'] ?? [];
+        $pathAccessed = $path;
 
         $this->throwErrorByPathIfExists($path, $errors);
 
-        while ([] !== $path) {
-            $pos = array_shift($path);
+        while ([] !== $pathAccessed) {
+            $pos = array_shift($pathAccessed);
 
             if (false === array_key_exists($pos, $data)) {
-                throw new Error('Missing value from upstream');
+                throw new Error(
+                    sprintf('Response data from upstream is missing field value at path: `%s`', implode('.', $path))
+                );
             }
 
             $data = $data[$pos];

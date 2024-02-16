@@ -37,11 +37,11 @@ final readonly class SchemaFactory
      * @throws Error
      * @throws \ReflectionException
      */
-    public function fromSDL(string $sdl, bool $forceRebuild = false): Schema
+    public function fromSDL(string $sdl, bool $force = false): Schema
     {
         $cacheKey = (string)crc32($sdl);
 
-        if (false === $forceRebuild) {
+        if (false === $force) {
             $schema = $this->loadSchemaFromCache($cacheKey);
 
             if (false !== $schema) {
@@ -66,12 +66,12 @@ final readonly class SchemaFactory
      * @throws Error
      * @throws \ReflectionException
      */
-    public function fromIntrospectionQuery(string $introspectionQuery = null, bool $forceRebuild = false): Schema
+    public function fromIntrospectionQuery(string $introspectionQuery = null, bool $force = false): Schema
     {
         $introspectionQuery ??= Introspection::getIntrospectionQuery();
         $cacheKey = (string)crc32($introspectionQuery);
 
-        if (false === $forceRebuild) {
+        if (false === $force) {
             $schema = $this->loadSchemaFromCache($cacheKey);
 
             if (false !== $schema) {
@@ -86,9 +86,7 @@ final readonly class SchemaFactory
         }
 
         if (isset($introspectionResult['errors'])) {
-            throw new RuntimeException(
-                sprintf('Error when introspect schema from upstream: `%s`', var_export($introspectionResult['errors'], true))
-            );
+            throw new RuntimeException('Got errors when introspect schema from upstream');
         }
 
         $schema = BuildClientSchema::build($introspectionResult['data']);
@@ -114,7 +112,6 @@ final readonly class SchemaFactory
 
         $astCached = $this->astCache->get($cacheKey);
         $ast = AST::fromArray($astCached);
-
         $schema = BuildSchema::build($ast, options: ['assumeValidSDL' => true]);
 
         $this->addRootFieldsResolver($schema);
