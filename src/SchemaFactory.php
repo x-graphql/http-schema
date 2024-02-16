@@ -22,6 +22,10 @@ use XGraphQL\HttpSchema\QueryExecutor\QueryExecutorInterface;
 
 final readonly class SchemaFactory
 {
+    public const SDL_CACHE_KEY = '_sdl';
+
+    public const INTROSPECTION_QUERY_CACHE_KEY = '_introspection_query';
+
     public function __construct(
         private QueryExecutorInterface $queryExecutor,
         private ?CacheInterface $astCache = null,
@@ -39,7 +43,7 @@ final readonly class SchemaFactory
      */
     public function fromSDL(string $sdl, bool $force = false): Schema
     {
-        $cacheKey = (string)crc32($sdl);
+        $cacheKey = self::SDL_CACHE_KEY;
 
         if (false === $force) {
             $schema = $this->loadSchemaFromCache($cacheKey);
@@ -69,7 +73,7 @@ final readonly class SchemaFactory
     public function fromIntrospectionQuery(string $introspectionQuery = null, bool $force = false): Schema
     {
         $introspectionQuery ??= Introspection::getIntrospectionQuery();
-        $cacheKey = (string)crc32($introspectionQuery);
+        $cacheKey = self::INTROSPECTION_QUERY_CACHE_KEY;
 
         if (false === $force) {
             $schema = $this->loadSchemaFromCache($cacheKey);
