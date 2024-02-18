@@ -9,7 +9,7 @@ use GraphQL\GraphQL;
 use GraphQL\Type\Schema;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use XGraphQL\HttpSchema\QueryExecutor\QueryExecutor;
+use XGraphQL\HttpSchema\HttpExecutionDelegator;
 use XGraphQL\HttpSchema\SchemaFactory;
 
 class SchemaExecutionTest extends TestCase
@@ -39,8 +39,8 @@ class SchemaExecutionTest extends TestCase
 
     public static function queriesProvider(): array
     {
-        $executor = new QueryExecutor('POST', 'https://countries.trevorblades.com/');
-        $factory = new SchemaFactory($executor);
+        $delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/');
+        $factory = new SchemaFactory($delegator);
         $schemaFromIntrospect = $factory->fromIntrospectionQuery();
         $schemaFromCustomSDL = $factory->fromSDL(
             <<<'SDL'
@@ -247,7 +247,7 @@ GQL,
                 [
                     'errors' => [
                         [
-                            'message' => 'Response data from upstream is missing field value at path: `country`',
+                            'message' => 'Delegated execution result is missing field value at path: `country`',
                         ],
                     ]
                 ]

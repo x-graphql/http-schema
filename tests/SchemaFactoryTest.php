@@ -5,29 +5,22 @@ declare(strict_types=1);
 namespace XGraphQL\HttpSchema\Test;
 
 use GraphQL\Error\Error;
-use GraphQL\Type\Introspection;
 use GraphQL\Type\Schema;
-use Http\Discovery\Psr18ClientDiscovery;
 use PHPUnit\Framework\TestCase;
 use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Cache\Psr16Cache;
-use Symfony\Component\HttpClient\HttpClient;
-use Symfony\Component\HttpClient\Psr18Client;
-use Symfony\Component\HttpClient\TraceableHttpClient;
-use XGraphQL\HttpSchema\Exception\RuntimeException;
-use XGraphQL\HttpSchema\QueryExecutor\QueryExecutor;
-use XGraphQL\HttpSchema\QueryExecutor\QueryExecutorInterface;
+use XGraphQL\HttpSchema\HttpExecutionDelegator;
 use XGraphQL\HttpSchema\SchemaFactory;
 
 class SchemaFactoryTest extends TestCase
 {
     public function testConstructor(): void
     {
-        $executor = $this->createStub(QueryExecutorInterface::class);
+        $delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/');
         $cache = $this->createStub(CacheInterface::class);
-        $instance = new SchemaFactory($executor);
-        $instanceWithCache = new SchemaFactory($executor, $cache);
+        $instance = new SchemaFactory($delegator);
+        $instanceWithCache = new SchemaFactory($delegator, $cache);
 
         $this->assertInstanceOf(SchemaFactory::class, $instance);
         $this->assertInstanceOf(SchemaFactory::class, $instanceWithCache);
@@ -35,8 +28,8 @@ class SchemaFactoryTest extends TestCase
 
     public function testCreateSchemaFromSDL(): void
     {
-        $executor = $this->createStub(QueryExecutorInterface::class);
-        $instance = new SchemaFactory($executor);
+        $delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/');
+        $instance = new SchemaFactory($delegator);
         $schema = $instance->fromSDL(
             <<<'GQL'
 schema {
@@ -54,9 +47,9 @@ GQL
 
     public function testCreateSchemaFromSDLWithCache(): void
     {
-        $executor = $this->createStub(QueryExecutorInterface::class);
+        $delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/');
         $cache = new Psr16Cache(new ArrayAdapter());
-        $instance = new SchemaFactory($executor, $cache);
+        $instance = new SchemaFactory($delegator, $cache);
         $sdl = <<<'GQL'
 schema {
   query: Query
@@ -80,8 +73,8 @@ GQL;
 
     public function testCreateSchemaFromIntrospectionQuery(): void
     {
-        $executor = new QueryExecutor('POST', 'https://countries.trevorblades.com/');
-        $instance = new SchemaFactory($executor);
+        $delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/');
+        $instance = new SchemaFactory($delegator);
         $schema = $instance->fromIntrospectionQuery();
 
         $this->assertInstanceOf(Schema::class, $schema);
@@ -89,9 +82,9 @@ GQL;
 
     public function testCreateSchemaFromIntrospectionQueryWithCache(): void
     {
-        $executor = new QueryExecutor('POST', 'https://countries.trevorblades.com/');
+        $delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/');
         $cache = new Psr16Cache(new ArrayAdapter());
-        $instance = new SchemaFactory($executor, $cache);
+        $instance = new SchemaFactory($delegator, $cache);
 
         $this->assertFalse($cache->has(SchemaFactory::INTROSPECTION_QUERY_CACHE_KEY));
 
@@ -109,8 +102,8 @@ GQL;
 
     public function testCreateSchemaFromInvalidSDL(): void
     {
-        $executor = $this->createStub(QueryExecutorInterface::class);
-        $instance = new SchemaFactory($executor);
+        $delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/');
+        $instance = new SchemaFactory($delegator);
 
         $this->expectException(Error::class);
 
@@ -123,25 +116,4 @@ SDL
         );
     }
 
-    public function testCreateSchemaFromIntrospectionQueryAndReceivedErrors(): void
-    {
-        $executor = $this->createMock(QueryExecutorInterface::class);
-
-        $executor
-            ->expects($this->once())
-            ->method('execute')
-            ->willReturn(
-                [
-                    'errors' => [
-                        ['message' => 'introspect error']
-                    ]
-                ]
-            );
-
-        $instance = new SchemaFactory($executor);
-
-        $this->expectException(RuntimeException::class);
-
-        $instance->fromIntrospectionQuery();
-    }
 }

@@ -24,21 +24,21 @@ composer require php-http/guzzle7-adapter
 Usages
 ------
 
-This library offers to you 2 strategy to build schema:
+This library offers to you 2 strategy to create schema:
 
 * Build from schema definition language (SDL), this strategy use for limiting fields user can access.
-* Build from introspection query, with this strategy we will make a http request for [introspecting schema](https://graphql.org/learn/introspection/) give user can access all the fields.
+* Build from introspection query, with this strategy it will make a http request for [introspecting schema](https://graphql.org/learn/introspection/), user can access all the fields.
 
 
 ### From SDL
 
 ```php
 use GraphQL\GraphQL;
-use XGraphQL\HttpSchema\QueryExecutor\QueryExecutor;
+use XGraphQL\HttpSchema\HttpExecutionDelegator;
 use XGraphQL\HttpSchema\SchemaFactory;
 
-$executor = new QueryExecutor('POST', 'https://countries.trevorblades.com/');
-$factory = new SchemaFactory($executor);
+$delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/');
+$factory = new SchemaFactory($delegator);
 $schema = $factory->fromSDL(
 <<<'SDL'
 type Query {
@@ -60,11 +60,11 @@ var_dump($result->toArray());
 
 ```php
 use GraphQL\GraphQL;
-use XGraphQL\HttpSchema\QueryExecutor\QueryExecutor;
+use XGraphQL\HttpSchema\HttpExecutionDelegator;
 use XGraphQL\HttpSchema\SchemaFactory;
 
-$executor = new QueryExecutor('POST', 'https://countries.trevorblades.com/');
-$factory = new SchemaFactory($executor);
+$delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/');
+$factory = new SchemaFactory($delegator);
 $schema = $factory->fromIntrospectionQuery();
 $result = GraphQL::executeQuery($schema, 'query { countries { name } }');
 
@@ -77,12 +77,12 @@ For optimize time to build schema from SDL or introspection query, you can give 
 cache schema after it built:
 
 ```php
-use XGraphQL\HttpSchema\QueryExecutor\QueryExecutor;
+use XGraphQL\HttpSchema\HttpExecutionDelegator;
 use XGraphQL\HttpSchema\SchemaFactory;
 
 /// $psr16Cache = ....
-$executor = new QueryExecutor('POST', 'https://countries.trevorblades.com/');
-$factory = new SchemaFactory($executor, /// $psr16Cache);
+$delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/');
+$factory = new SchemaFactory($delegator, /// $psr16Cache);
 
 /// ........
 ```
