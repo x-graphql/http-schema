@@ -7,6 +7,7 @@ namespace XGraphQL\HttpSchema;
 use GraphQL\Error\Error;
 use GraphQL\Error\SerializationError;
 use GraphQL\Error\SyntaxError;
+use GraphQL\Executor\ExecutionResult;
 use GraphQL\Language\Parser;
 use GraphQL\Type\Introspection;
 use GraphQL\Type\Schema;
@@ -14,11 +15,10 @@ use GraphQL\Utils\AST;
 use GraphQL\Utils\BuildClientSchema;
 use GraphQL\Utils\BuildSchema;
 use GraphQL\Utils\SchemaPrinter;
-use Http\Promise\Promise;
 use Psr\SimpleCache\CacheInterface;
 use Psr\SimpleCache\InvalidArgumentException;
+use XGraphQL\DelegateExecution\Execution;
 use XGraphQL\HttpSchema\Exception\RuntimeException;
-use XGraphQL\HttpSchema\QueryExecutor\QueryExecutorInterface;
 
 final readonly class SchemaFactory
 {
@@ -27,7 +27,7 @@ final readonly class SchemaFactory
     public const INTROSPECTION_QUERY_CACHE_KEY = '_introspection_query';
 
     public function __construct(
-        private QueryExecutorInterface $queryExecutor,
+        private HttpExecutionDelegator $delegator,
         private ?CacheInterface $astCache = null,
     ) {
     }
@@ -56,7 +56,8 @@ final readonly class SchemaFactory
         $schema = BuildSchema::build($sdl);
 
         $this->saveSchemaToCache($cacheKey, $schema);
-        $this->addRootFieldsResolver($schema);
+
+        Execution::delegate($schema, $this->delegator);
 
         return $schema;
     }
@@ -72,7 +73,6 @@ final readonly class SchemaFactory
      */
     public function fromIntrospectionQuery(string $introspectionQuery = null, bool $force = false): Schema
     {
-        $introspectionQuery ??= Introspection::getIntrospectionQuery();
         $cacheKey = self::INTROSPECTION_QUERY_CACHE_KEY;
 
         if (false === $force) {
@@ -83,20 +83,21 @@ final readonly class SchemaFactory
             }
         }
 
-        $introspectionResult = $this->queryExecutor->execute($introspectionQuery);
+        $introspectionQuery ??= Introspection::getIntrospectionQuery();
+        $promise = $this->delegator->executeQuery($introspectionQuery);
 
-        if ($introspectionResult instanceof Promise) {
-            $introspectionResult = $introspectionResult->wait();
-        }
+        /** @var ExecutionResult $introspectionResult */
+        $introspectionResult = $promise->wait();
 
-        if (isset($introspectionResult['errors'])) {
+        if ([] !== $introspectionResult->errors) {
             throw new RuntimeException('Got errors when introspect schema from upstream');
         }
 
-        $schema = BuildClientSchema::build($introspectionResult['data']);
+        $schema = BuildClientSchema::build($introspectionResult->data);
 
         $this->saveSchemaToCache($cacheKey, $schema);
-        $this->addRootFieldsResolver($schema);
+
+        Execution::delegate($schema, $this->delegator);
 
         return $schema;
     }
@@ -118,7 +119,7 @@ final readonly class SchemaFactory
         $ast = AST::fromArray($astCached);
         $schema = BuildSchema::build($ast, options: ['assumeValidSDL' => true]);
 
-        $this->addRootFieldsResolver($schema);
+        Execution::delegate($schema, $this->delegator);
 
         return $schema;
     }
@@ -141,20 +142,5 @@ final readonly class SchemaFactory
         $astNormalized = AST::toArray($ast);
 
         return $this->astCache->set($cacheKey, $astNormalized);
-    }
-
-    private function addRootFieldsResolver(Schema $schema): void
-    {
-        foreach (['query', 'mutation'] as $operation) {
-            $rootFieldResolver = new RootFieldsResolver($this->queryExecutor);
-            $rootType = $schema->getOperationType($operation);
-
-            if (null !== $rootType) {
-                $rootType->resolveFieldFn = $rootFieldResolver;
-            }
-        }
-
-        /// Not support subscription yet.
-        $schema->getConfig()->subscription = null;
     }
 }
