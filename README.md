@@ -24,7 +24,7 @@ composer require php-http/guzzle7-adapter
 Usages
 ------
 
-This library offers to you 2 strategy to create schema:
+This library offers to you 2 strategy to build schema:
 
 * Build from schema definition language (SDL), this strategy use for limiting fields user can access.
 * Build from introspection query, with this strategy it will make a http request for [introspecting schema](https://graphql.org/learn/introspection/), user can access all the fields.
