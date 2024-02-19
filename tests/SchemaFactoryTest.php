@@ -6,10 +6,15 @@ namespace XGraphQL\HttpSchema\Test;
 
 use GraphQL\Error\Error;
 use GraphQL\Type\Schema;
+use Http\Discovery\Psr17FactoryDiscovery;
 use PHPUnit\Framework\TestCase;
 use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Cache\Psr16Cache;
+use Symfony\Component\HttpClient\MockHttpClient;
+use Symfony\Component\HttpClient\Psr18Client;
+use Symfony\Component\HttpClient\Response\MockResponse;
+use XGraphQL\HttpSchema\Exception\RuntimeException;
 use XGraphQL\HttpSchema\HttpExecutionDelegator;
 use XGraphQL\HttpSchema\SchemaFactory;
 
@@ -116,4 +121,27 @@ SDL
         );
     }
 
+    public function testCreateSchemaFromIntrospectionQueryError(): void
+    {
+        $mockClient = new MockHttpClient(
+            [
+                new MockResponse(
+                    json_encode(
+                        [
+                            'errors' => [
+                                ['message' => 'introspect error']
+                            ]
+                        ]
+                    )
+                )
+            ]
+        );
+        $client = new Psr18Client($mockClient);
+        $delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/', client: $client);
+        $instance = new SchemaFactory($delegator);
+
+        $this->expectException(RuntimeException::class);
+
+        $instance->fromIntrospectionQuery();
+    }
 }

@@ -15,6 +15,7 @@ use GraphQL\Utils\AST;
 use GraphQL\Utils\BuildClientSchema;
 use GraphQL\Utils\BuildSchema;
 use GraphQL\Utils\SchemaPrinter;
+use Http\Promise\Promise;
 use Psr\SimpleCache\CacheInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use XGraphQL\DelegateExecution\Execution;
@@ -73,6 +74,7 @@ final readonly class SchemaFactory
      */
     public function fromIntrospectionQuery(string $introspectionQuery = null, bool $force = false): Schema
     {
+        $introspectionQuery ??= Introspection::getIntrospectionQuery();
         $cacheKey = self::INTROSPECTION_QUERY_CACHE_KEY;
 
         if (false === $force) {
@@ -83,17 +85,20 @@ final readonly class SchemaFactory
             }
         }
 
-        $introspectionQuery ??= Introspection::getIntrospectionQuery();
-        $promise = $this->delegator->executeQuery($introspectionQuery);
+        $promiseOrResult = $this->delegator->executeQuery($introspectionQuery);
 
-        /** @var ExecutionResult $introspectionResult */
-        $introspectionResult = $promise->wait();
+        if ($promiseOrResult instanceof Promise) {
+            /** @var ExecutionResult $result */
+            $result = $promiseOrResult->wait();
+        } else {
+            $result = $promiseOrResult;
+        }
 
-        if ([] !== $introspectionResult->errors) {
+        if ([] !== $result->errors) {
             throw new RuntimeException('Got errors when introspect schema from upstream');
         }
 
-        $schema = BuildClientSchema::build($introspectionResult->data);
+        $schema = BuildClientSchema::build($result->data);
 
         $this->saveSchemaToCache($cacheKey, $schema);
 
