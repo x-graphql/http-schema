@@ -11,6 +11,7 @@ use GraphQL\Executor\Promise\Promise;
 use GraphQL\Executor\Promise\PromiseAdapter;
 use GraphQL\Language\AST\OperationDefinitionNode;
 use GraphQL\Language\Printer;
+use GraphQL\Type\Schema;
 use Http\Client\HttpAsyncClient;
 use Http\Promise\Promise as HttpPromise;
 use Http\Discovery\Exception\NotFoundException;
@@ -68,8 +69,12 @@ final readonly class HttpExecutionDelegator implements ExecutionDelegatorInterfa
     /**
      * @throws ClientExceptionInterface
      */
-    public function delegate(OperationDefinitionNode $operation, array $fragments = [], array $variables = []): Promise
-    {
+    public function delegate(
+        Schema $executionSchema,
+        OperationDefinitionNode $operation,
+        array $fragments = [],
+        array $variables = []
+    ): Promise {
         $queryBlocks = [];
 
         foreach ($fragments as $fragment) {
@@ -97,8 +102,11 @@ final readonly class HttpExecutionDelegator implements ExecutionDelegatorInterfa
      * @throws ClientExceptionInterface
      * @throws \Exception
      */
-    public function executeQuery(string $query, array $variables = null, string $operationName = null): ExecutionResult|HttpPromise
-    {
+    public function executeQuery(
+        string $query,
+        array $variables = null,
+        string $operationName = null
+    ): ExecutionResult|HttpPromise {
         $body = json_encode(
             array_filter(
                 compact('query', 'variables', 'operationName')
