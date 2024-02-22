@@ -6,5 +6,4 @@ namespace XGraphQL\HttpSchema\Exception;
 
 class RuntimeException extends \RuntimeException implements ExceptionInterface
 {
-
 }

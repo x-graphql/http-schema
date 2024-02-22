@@ -6,7 +6,6 @@ namespace XGraphQL\HttpSchema\Test;
 
 use GraphQL\Error\Error;
 use GraphQL\Type\Schema;
-use Http\Discovery\Psr17FactoryDiscovery;
 use PHPUnit\Framework\TestCase;
 use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;

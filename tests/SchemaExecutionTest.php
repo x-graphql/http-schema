@@ -22,7 +22,7 @@ class SchemaExecutionTest extends TestCase
 
         if (isset($result['errors'])) {
             $errors = array_map(
-                fn(array $error) => array_filter(
+                fn (array $error) => array_filter(
                     [
                         'message' => $error['message'] ?? null,
                         'extensions' => $error['extensions'] ?? null
