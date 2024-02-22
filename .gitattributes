@@ -16,3 +16,4 @@
 /resources/                 export-ignore
 /SECURITY.md                export-ignore
 /tests/                     export-ignore
+/ecs.php                    export-ignore

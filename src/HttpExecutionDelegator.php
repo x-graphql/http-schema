@@ -13,11 +13,11 @@ use GraphQL\Language\AST\OperationDefinitionNode;
 use GraphQL\Language\Printer;
 use GraphQL\Type\Schema;
 use Http\Client\HttpAsyncClient;
-use Http\Promise\Promise as HttpPromise;
 use Http\Discovery\Exception\NotFoundException;
 use Http\Discovery\HttpAsyncClientDiscovery;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Discovery\Psr18ClientDiscovery;
+use Http\Promise\Promise as HttpPromise;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -91,7 +91,7 @@ final readonly class HttpExecutionDelegator implements ExecutionDelegatorInterfa
             return $this
                 ->promiseAdapter
                 ->create(
-                    fn(callable $resolve) => $resolve($promiseOrResult->wait())
+                    fn (callable $resolve) => $resolve($promiseOrResult->wait())
                 );
         }
 
