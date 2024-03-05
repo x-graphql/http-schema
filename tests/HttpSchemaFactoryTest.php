@@ -15,26 +15,27 @@ use Symfony\Component\HttpClient\Psr18Client;
 use Symfony\Component\HttpClient\Response\MockResponse;
 use XGraphQL\HttpSchema\Exception\RuntimeException;
 use XGraphQL\HttpSchema\HttpExecutionDelegator;
-use XGraphQL\HttpSchema\SchemaFactory;
+use XGraphQL\HttpSchema\HttpSchemaFactory;
+use XGraphQL\HttpSchema\SchemaCache;
 
-class SchemaFactoryTest extends TestCase
+class HttpSchemaFactoryTest extends TestCase
 {
     public function testConstructor(): void
     {
         $delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/');
         $cache = $this->createStub(CacheInterface::class);
-        $instance = new SchemaFactory($delegator);
-        $instanceWithCache = new SchemaFactory($delegator, $cache);
+        $instance = new HttpSchemaFactory($delegator);
+        $instanceWithCache = new HttpSchemaFactory($delegator, $cache);
 
-        $this->assertInstanceOf(SchemaFactory::class, $instance);
-        $this->assertInstanceOf(SchemaFactory::class, $instanceWithCache);
+        $this->assertInstanceOf(HttpSchemaFactory::class, $instance);
+        $this->assertInstanceOf(HttpSchemaFactory::class, $instanceWithCache);
     }
 
     public function testCreateSchemaFromSDL(): void
     {
         $delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/');
-        $instance = new SchemaFactory($delegator);
-        $schema = $instance->fromSDL(
+        $schema = HttpSchemaFactory::createFromSDL(
+            $delegator,
             <<<'GQL'
 schema {
   query: Query
@@ -43,7 +44,7 @@ schema {
 type Query {
   dummy: String!
 }
-GQL
+GQL,
         );
 
         $this->assertInstanceOf(Schema::class, $schema);
@@ -53,7 +54,6 @@ GQL
     {
         $delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/');
         $cache = new Psr16Cache(new ArrayAdapter());
-        $instance = new SchemaFactory($delegator, $cache);
         $sdl = <<<'GQL'
 schema {
   query: Query
@@ -63,14 +63,14 @@ type Query {
   dummy: String!
 }
 GQL;
-        $this->assertFalse($cache->has(SchemaFactory::SDL_CACHE_KEY));
+        $this->assertFalse($cache->has(SchemaCache::CACHE_KEY));
 
-        $schema = $instance->fromSDL($sdl);
+        $schema = HttpSchemaFactory::createFromSDL($delegator, $sdl, $cache);
 
-        $this->assertTrue($cache->has(SchemaFactory::SDL_CACHE_KEY));
+        $this->assertTrue($cache->has(SchemaCache::CACHE_KEY));
         $this->assertInstanceOf(Schema::class, $schema);
 
-        $schemaFromCache = $instance->fromSDL($sdl);
+        $schemaFromCache = HttpSchemaFactory::createFromSDL($delegator, $sdl, $cache);
 
         $this->assertNotSame($schema, $schemaFromCache);
     }
@@ -78,8 +78,7 @@ GQL;
     public function testCreateSchemaFromIntrospectionQuery(): void
     {
         $delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/');
-        $instance = new SchemaFactory($delegator);
-        $schema = $instance->fromIntrospectionQuery();
+        $schema = HttpSchemaFactory::createFromIntrospectionQuery($delegator);
 
         $this->assertInstanceOf(Schema::class, $schema);
     }
@@ -88,35 +87,32 @@ GQL;
     {
         $delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/');
         $cache = new Psr16Cache(new ArrayAdapter());
-        $instance = new SchemaFactory($delegator, $cache);
 
-        $this->assertFalse($cache->has(SchemaFactory::INTROSPECTION_QUERY_CACHE_KEY));
+        $this->assertFalse($cache->has(SchemaCache::CACHE_KEY));
 
-        $schema = $instance->fromIntrospectionQuery();
+        $schema = HttpSchemaFactory::createFromIntrospectionQuery($delegator, $cache);
 
-        $this->assertTrue($cache->has(SchemaFactory::INTROSPECTION_QUERY_CACHE_KEY));
+        $this->assertTrue($cache->has(SchemaCache::CACHE_KEY));
         $this->assertInstanceOf(Schema::class, $schema);
 
-        $schemaFromCache = $instance->fromIntrospectionQuery();
+        $schemaFromCache = HttpSchemaFactory::createFromIntrospectionQuery($delegator, $cache);
 
         $this->assertNotSame($schema, $schemaFromCache);
-
-        $instance->fromIntrospectionQuery(force: true);
     }
 
     public function testCreateSchemaFromInvalidSDL(): void
     {
         $delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/');
-        $instance = new SchemaFactory($delegator);
 
         $this->expectException(Error::class);
 
-        $instance->fromSDL(
+        HttpSchemaFactory::createFromSDL(
+            $delegator,
             <<<'SDL'
 schema {
   query: MissingType
 }
-SDL
+SDL,
         );
     }
 
@@ -137,10 +133,9 @@ SDL
         );
         $client = new Psr18Client($mockClient);
         $delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/', client: $client);
-        $instance = new SchemaFactory($delegator);
 
         $this->expectException(RuntimeException::class);
 
-        $instance->fromIntrospectionQuery();
+        HttpSchemaFactory::createFromIntrospectionQuery($delegator);
     }
 }

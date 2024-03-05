@@ -35,11 +35,11 @@ This library offers to you 2 strategy to build schema:
 ```php
 use GraphQL\GraphQL;
 use XGraphQL\HttpSchema\HttpExecutionDelegator;
-use XGraphQL\HttpSchema\SchemaFactory;
+use XGraphQL\HttpSchema\HttpSchemaFactory;
 
 $delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/');
-$factory = new SchemaFactory($delegator);
-$schema = $factory->fromSDL(
+$schema = HttpSchemaFactory::createFromSDL(
+$delegator,
 <<<'SDL'
 type Query {
   countries: [Country!]!
@@ -61,11 +61,10 @@ var_dump($result->toArray());
 ```php
 use GraphQL\GraphQL;
 use XGraphQL\HttpSchema\HttpExecutionDelegator;
-use XGraphQL\HttpSchema\SchemaFactory;
+use XGraphQL\HttpSchema\HttpSchemaFactory;
 
 $delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/');
-$factory = new SchemaFactory($delegator);
-$schema = $factory->fromIntrospectionQuery();
+$schema = HttpSchemaFactory::createFromIntrospectionQuery($delegator);
 $result = GraphQL::executeQuery($schema, 'query { countries { name } }');
 
 var_dump($result->toArray());
@@ -73,16 +72,17 @@ var_dump($result->toArray());
 
 ### Caching schema
 
-For optimize time to build schema from SDL or introspection query, you can give this library [PSR-16](https://www.php-fig.org/psr/psr-16/) instance to 
-cache schema after it built:
+For optimizing time to build schema from SDL or introspection query, you can put [PSR-16](https://www.php-fig.org/psr/psr-16/) instance to 
+factory methods for caching schema after built:
 
 ```php
 use XGraphQL\HttpSchema\HttpExecutionDelegator;
-use XGraphQL\HttpSchema\SchemaFactory;
+use XGraphQL\HttpSchema\HttpSchemaFactory;
 
 /// $psr16Cache = ....
 $delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/');
-$factory = new SchemaFactory($delegator, /// $psr16Cache);
+$schemaFromSDL = HttpSchemaFactory::createFromSDL($delegator, /// $sdl, $psr16Cache);
+$schemaFromIntrospection = HttpSchemaFactory::createFromIntrospectionQuery($delegator, /// $psr16Cache);
 
 /// ........
 ```
