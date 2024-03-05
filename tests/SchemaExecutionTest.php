@@ -10,7 +10,7 @@ use GraphQL\Type\Schema;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use XGraphQL\HttpSchema\HttpExecutionDelegator;
-use XGraphQL\HttpSchema\SchemaFactory;
+use XGraphQL\HttpSchema\HttpSchemaFactory;
 
 class SchemaExecutionTest extends TestCase
 {
@@ -40,9 +40,9 @@ class SchemaExecutionTest extends TestCase
     public static function queriesProvider(): array
     {
         $delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/');
-        $factory = new SchemaFactory($delegator);
-        $schemaFromIntrospect = $factory->fromIntrospectionQuery();
-        $schemaFromCustomSDL = $factory->fromSDL(
+        $schemaFromIntrospect = HttpSchemaFactory::createFromIntrospectionQuery($delegator);
+        $schemaFromCustomSDL = HttpSchemaFactory::createFromSDL(
+            $delegator,
             <<<'SDL'
 type Query {
   country(code: ID!): ICountry
@@ -79,7 +79,7 @@ type XContinent implements IContinent {
   code: String!
   name: String!
 }
-SDL
+SDL,
         );
         return [
             'get country' => [
