@@ -38,7 +38,6 @@ final readonly class HttpExecutionDelegator implements ExecutionDelegatorInterfa
     private PromiseAdapter $promiseAdapter;
 
     public function __construct(
-        private string $method,
         private string|UriInterface $uri,
         private array $headers = [],
         ClientInterface|HttpAsyncClient $client = null,
@@ -115,7 +114,7 @@ final readonly class HttpExecutionDelegator implements ExecutionDelegatorInterfa
         $stream = $this->streamFactory->createStream($body);
         $request = $this
             ->requestFactory
-            ->createRequest($this->method, $this->uri)
+            ->createRequest('POST', $this->uri)
             ->withBody($stream);
 
         foreach ($this->headers as $name => $values) {

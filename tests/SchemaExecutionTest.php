@@ -39,7 +39,7 @@ class SchemaExecutionTest extends TestCase
 
     public static function queriesProvider(): array
     {
-        $delegator = new HttpExecutionDelegator('POST', 'https://countries.trevorblades.com/');
+        $delegator = new HttpExecutionDelegator('https://countries.trevorblades.com/');
         $schemaFromIntrospect = HttpSchemaFactory::createFromIntrospectionQuery($delegator);
         $schemaFromCustomSDL = HttpSchemaFactory::createFromSDL(
             $delegator,
