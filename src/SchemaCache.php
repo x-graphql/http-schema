@@ -17,7 +17,7 @@ use Psr\SimpleCache\InvalidArgumentException;
 
 final readonly class SchemaCache
 {
-    public const CACHE_KEY = '_graphql_schema';
+    public const CACHE_KEY = '_x_graphql_ast_http_schema';
 
     public function __construct(private CacheInterface $psr16Cache)
     {
