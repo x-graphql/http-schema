@@ -247,7 +247,10 @@ GQL,
                 [
                     'errors' => [
                         [
-                            'message' => 'Delegated execution result is missing field value at path: `country`',
+                            'message' => 'Internal server error',
+                            'extensions' => [
+                                'debugMessage' => 'Delegated execution result is missing field value at path: `country`'
+                            ]
                         ],
                     ]
                 ]
