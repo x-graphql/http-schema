@@ -14,7 +14,7 @@ use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Psr18Client;
 use Symfony\Component\HttpClient\Response\MockResponse;
 use XGraphQL\HttpSchema\Exception\RuntimeException;
-use XGraphQL\HttpSchema\HttpExecutionDelegator;
+use XGraphQL\HttpSchema\HttpDelegator;
 use XGraphQL\HttpSchema\HttpSchemaFactory;
 use XGraphQL\HttpSchema\SchemaCache;
 
@@ -22,7 +22,7 @@ class HttpSchemaFactoryTest extends TestCase
 {
     public function testConstructor(): void
     {
-        $delegator = new HttpExecutionDelegator('https://countries.trevorblades.com/');
+        $delegator = new HttpDelegator('https://countries.trevorblades.com/');
         $cache = $this->createStub(CacheInterface::class);
         $instance = new HttpSchemaFactory($delegator);
         $instanceWithCache = new HttpSchemaFactory($delegator, $cache);
@@ -33,7 +33,7 @@ class HttpSchemaFactoryTest extends TestCase
 
     public function testCreateSchemaFromSDL(): void
     {
-        $delegator = new HttpExecutionDelegator('https://countries.trevorblades.com/');
+        $delegator = new HttpDelegator('https://countries.trevorblades.com/');
         $schema = HttpSchemaFactory::createFromSDL(
             $delegator,
             <<<'GQL'
@@ -52,7 +52,7 @@ GQL,
 
     public function testCreateSchemaFromSDLWithCache(): void
     {
-        $delegator = new HttpExecutionDelegator('https://countries.trevorblades.com/');
+        $delegator = new HttpDelegator('https://countries.trevorblades.com/');
         $cache = new Psr16Cache(new ArrayAdapter());
         $sdl = <<<'GQL'
 schema {
@@ -77,7 +77,7 @@ GQL;
 
     public function testCreateSchemaFromIntrospectionQuery(): void
     {
-        $delegator = new HttpExecutionDelegator('https://countries.trevorblades.com/');
+        $delegator = new HttpDelegator('https://countries.trevorblades.com/');
         $schema = HttpSchemaFactory::createFromIntrospectionQuery($delegator);
 
         $this->assertInstanceOf(Schema::class, $schema);
@@ -85,7 +85,7 @@ GQL;
 
     public function testCreateSchemaFromIntrospectionQueryWithCache(): void
     {
-        $delegator = new HttpExecutionDelegator('https://countries.trevorblades.com/');
+        $delegator = new HttpDelegator('https://countries.trevorblades.com/');
         $cache = new Psr16Cache(new ArrayAdapter());
 
         $this->assertFalse($cache->has(SchemaCache::CACHE_KEY));
@@ -102,7 +102,7 @@ GQL;
 
     public function testCreateSchemaFromInvalidSDL(): void
     {
-        $delegator = new HttpExecutionDelegator('https://countries.trevorblades.com/');
+        $delegator = new HttpDelegator('https://countries.trevorblades.com/');
 
         $this->expectException(Error::class);
 
@@ -132,7 +132,7 @@ SDL,
             ]
         );
         $client = new Psr18Client($mockClient);
-        $delegator = new HttpExecutionDelegator('https://countries.trevorblades.com/', client: $client);
+        $delegator = new HttpDelegator('https://countries.trevorblades.com/', client: $client);
 
         $this->expectException(RuntimeException::class);
 

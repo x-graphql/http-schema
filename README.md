@@ -34,10 +34,10 @@ This library offers to you 2 strategy to build schema:
 
 ```php
 use GraphQL\GraphQL;
-use XGraphQL\HttpSchema\HttpExecutionDelegator;
+use XGraphQL\HttpSchema\HttpDelegator;
 use XGraphQL\HttpSchema\HttpSchemaFactory;
 
-$delegator = new HttpExecutionDelegator('https://countries.trevorblades.com/');
+$delegator = new HttpDelegator('https://countries.trevorblades.com/');
 $schema = HttpSchemaFactory::createFromSDL(
 $delegator,
 <<<'SDL'
@@ -60,10 +60,10 @@ var_dump($result->toArray());
 
 ```php
 use GraphQL\GraphQL;
-use XGraphQL\HttpSchema\HttpExecutionDelegator;
+use XGraphQL\HttpSchema\HttpDelegator;
 use XGraphQL\HttpSchema\HttpSchemaFactory;
 
-$delegator = new HttpExecutionDelegator('https://countries.trevorblades.com/');
+$delegator = new HttpDelegator('https://countries.trevorblades.com/');
 $schema = HttpSchemaFactory::createFromIntrospectionQuery($delegator);
 $result = GraphQL::executeQuery($schema, 'query { countries { name } }');
 
@@ -76,11 +76,11 @@ For optimizing time to build schema from SDL or introspection query, you can put
 factory methods for caching schema after built:
 
 ```php
-use XGraphQL\HttpSchema\HttpExecutionDelegator;
+use XGraphQL\HttpSchema\HttpDelegator;
 use XGraphQL\HttpSchema\HttpSchemaFactory;
 
 /// $psr16Cache = ....
-$delegator = new HttpExecutionDelegator('https://countries.trevorblades.com/');
+$delegator = new HttpDelegator('https://countries.trevorblades.com/');
 $schemaFromSDL = HttpSchemaFactory::createFromSDL($delegator, /// $sdl, $psr16Cache);
 $schemaFromIntrospection = HttpSchemaFactory::createFromIntrospectionQuery($delegator, /// $psr16Cache);
 

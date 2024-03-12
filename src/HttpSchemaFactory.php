@@ -15,7 +15,7 @@ use GraphQL\Utils\BuildSchema;
 use Http\Promise\Promise;
 use Psr\SimpleCache\CacheInterface;
 use Psr\SimpleCache\InvalidArgumentException;
-use XGraphQL\DelegateExecution\DelegatedErrorsReporterInterface;
+use XGraphQL\DelegateExecution\ErrorsReporterInterface;
 use XGraphQL\DelegateExecution\Execution;
 use XGraphQL\HttpSchema\Exception\RuntimeException;
 
@@ -30,10 +30,10 @@ final readonly class HttpSchemaFactory
      * @throws \ReflectionException
      */
     public static function createFromSDL(
-        HttpExecutionDelegator $delegator,
+        HttpDelegator $delegator,
         string $sdl,
         CacheInterface $cache = null,
-        DelegatedErrorsReporterInterface $errorsReporter = null,
+        ErrorsReporterInterface $errorsReporter = null,
     ): Schema {
         $schemaCache = null !== $cache ? new SchemaCache($cache) : null;
         $schema = $schemaCache?->loadSchemaFromCache();
@@ -58,10 +58,10 @@ final readonly class HttpSchemaFactory
      * @throws \ReflectionException
      */
     public static function createFromIntrospectionQuery(
-        HttpExecutionDelegator $delegator,
+        HttpDelegator $delegator,
         CacheInterface $cache = null,
         string $introspectionQuery = null,
-        DelegatedErrorsReporterInterface $errorsReporter = null
+        ErrorsReporterInterface $errorsReporter = null
     ): Schema {
         $introspectionQuery ??= Introspection::getIntrospectionQuery();
         $schemaCache = null !== $cache ? new SchemaCache($cache) : null;

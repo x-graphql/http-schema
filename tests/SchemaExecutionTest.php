@@ -9,7 +9,7 @@ use GraphQL\GraphQL;
 use GraphQL\Type\Schema;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use XGraphQL\HttpSchema\HttpExecutionDelegator;
+use XGraphQL\HttpSchema\HttpDelegator;
 use XGraphQL\HttpSchema\HttpSchemaFactory;
 
 class SchemaExecutionTest extends TestCase
@@ -39,7 +39,7 @@ class SchemaExecutionTest extends TestCase
 
     public static function queriesProvider(): array
     {
-        $delegator = new HttpExecutionDelegator('https://countries.trevorblades.com/');
+        $delegator = new HttpDelegator('https://countries.trevorblades.com/');
         $schemaFromIntrospect = HttpSchemaFactory::createFromIntrospectionQuery($delegator);
         $schemaFromCustomSDL = HttpSchemaFactory::createFromSDL(
             $delegator,
