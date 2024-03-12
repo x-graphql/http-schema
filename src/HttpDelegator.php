@@ -24,10 +24,11 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\UriInterface;
+use XGraphQL\Delegate\DelegatorInterface;
 use XGraphQL\DelegateExecution\ExecutionDelegatorInterface;
-use XGraphQL\HttpSchema\Exception\HttpExecutionException;
+use XGraphQL\HttpSchema\Exception\HttpDelegateException;
 
-final readonly class HttpExecutionDelegator implements ExecutionDelegatorInterface
+final readonly class HttpDelegator implements DelegatorInterface
 {
     private ClientInterface|HttpAsyncClient $client;
 
@@ -68,7 +69,7 @@ final readonly class HttpExecutionDelegator implements ExecutionDelegatorInterfa
     /**
      * @throws ClientExceptionInterface
      */
-    public function delegate(
+    public function delegateToExecute(
         Schema $executionSchema,
         OperationDefinitionNode $operation,
         array $fragments = [],
@@ -90,7 +91,7 @@ final readonly class HttpExecutionDelegator implements ExecutionDelegatorInterfa
             return $this
                 ->promiseAdapter
                 ->create(
-                    fn (callable $resolve) => $resolve($promiseOrResult->wait())
+                    fn(callable $resolve) => $resolve($promiseOrResult->wait())
                 );
         }
 
@@ -150,24 +151,22 @@ final readonly class HttpExecutionDelegator implements ExecutionDelegatorInterfa
                 && !isset($resultRaw['extensions'])
             )
         ) {
-            $exception = new HttpExecutionException('Result received from upstream is invalid json format');
+            $exception = new HttpDelegateException('Result received from upstream is invalid json format');
             $exception->setHttpResponse($response);
 
             throw $exception;
         }
 
-        $result = new ExecutionResult();
-        $result->data = $resultRaw['data'] ?? null;
-        $result->extensions = $resultRaw['extensions'] ?? null;
+        $errors = [];
 
         foreach ($resultRaw['errors'] ?? [] as $error) {
-            $result->errors[] = new Error(
+            $errors[] = new Error(
                 message: $error['message'] ?? '',
                 path: $error['path'] ?? null,
                 extensions: $error['extensions'] ?? null,
             );
         }
 
-        return $result;
+        return new ExecutionResult($resultRaw['data'] ?? null, $errors, $resultRaw['extensions'] ?? []);
     }
 }

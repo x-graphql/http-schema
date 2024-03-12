@@ -6,7 +6,7 @@ namespace XGraphQL\HttpSchema\Exception;
 
 use Psr\Http\Message\ResponseInterface;
 
-final class HttpExecutionException extends RuntimeException implements ExceptionInterface
+final class HttpDelegateException extends RuntimeException implements ExceptionInterface
 {
     public readonly ResponseInterface $httpResponse;
 
