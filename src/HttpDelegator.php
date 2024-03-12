@@ -6,7 +6,7 @@ namespace XGraphQL\HttpSchema;
 
 use GraphQL\Error\Error;
 use GraphQL\Executor\ExecutionResult;
-use GraphQL\Executor\Promise\Adapter\SyncPromiseAdapter;
+use GraphQL\Executor\Executor;
 use GraphQL\Executor\Promise\Promise;
 use GraphQL\Executor\Promise\PromiseAdapter;
 use GraphQL\Language\AST\OperationDefinitionNode;
@@ -25,7 +25,6 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\UriInterface;
 use XGraphQL\Delegate\DelegatorInterface;
-use XGraphQL\DelegateExecution\ExecutionDelegatorInterface;
 use XGraphQL\HttpSchema\Exception\HttpDelegateException;
 
 final readonly class HttpDelegator implements DelegatorInterface
@@ -48,7 +47,7 @@ final readonly class HttpDelegator implements DelegatorInterface
     ) {
         $this->requestFactory = $requestFactory ?? Psr17FactoryDiscovery::findRequestFactory();
         $this->streamFactory = $streamFactory ?? Psr17FactoryDiscovery::findStreamFactory();
-        $this->promiseAdapter = $promiseAdapter ?? new SyncPromiseAdapter();
+        $this->promiseAdapter = $promiseAdapter ?? Executor::getPromiseAdapter();
 
         if (null === $client) {
             try {
@@ -91,7 +90,7 @@ final readonly class HttpDelegator implements DelegatorInterface
             return $this
                 ->promiseAdapter
                 ->create(
-                    fn(callable $resolve) => $resolve($promiseOrResult->wait())
+                    fn (callable $resolve) => $resolve($promiseOrResult->wait())
                 );
         }
 
