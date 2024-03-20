@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace XGraphQL\HttpSchema;
 
+use GraphQL\Deferred;
 use GraphQL\Error\Error;
 use GraphQL\Executor\ExecutionResult;
 use GraphQL\Executor\Executor;
+use GraphQL\Executor\Promise\Adapter\SyncPromiseAdapter;
 use GraphQL\Executor\Promise\Promise;
 use GraphQL\Executor\Promise\PromiseAdapter;
 use GraphQL\Language\AST\OperationDefinitionNode;
@@ -85,16 +87,24 @@ final readonly class HttpDelegator implements DelegatorInterface
         $query = implode(PHP_EOL, $queryBlocks);
 
         $promiseOrResult = $this->executeQuery($query, $variables, $operation->name?->value);
+        $adapter = $this->getPromiseAdapter();
 
-        if ($promiseOrResult instanceof HttpPromise) {
-            return $this
-                ->promiseAdapter
-                ->create(
-                    fn (callable $resolve) => $resolve($promiseOrResult->wait())
-                );
+        if (!$promiseOrResult instanceof HttpPromise) {
+            return $adapter->createFulfilled($promiseOrResult);
         }
 
-        return $this->promiseAdapter->createFulfilled($promiseOrResult);
+        if ($adapter instanceof SyncPromiseAdapter) {
+            /// defer to execute wait later
+            return $adapter->convertThenable(
+                Deferred::create(
+                    $promiseOrResult->wait(...)
+                )
+            );
+        }
+
+        return $adapter->create(
+            fn (callable $resolve) => $resolve($promiseOrResult->wait())
+        );
     }
 
     /**
