@@ -31,7 +31,7 @@
         "psr/http-message": "^2.0",
         "psr/simple-cache": "^2.0 || ^3.0",
         "webonyx/graphql-php": "^15.9",
-        "x-graphql/delegate-execution": "^0.8"
+        "x-graphql/delegate-execution": "^0.9"
     },
     "config": {
         "sort-packages": true,
