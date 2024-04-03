@@ -13,11 +13,11 @@ use GraphQL\Type\Schema;
 use GraphQL\Utils\BuildClientSchema;
 use GraphQL\Utils\BuildSchema;
 use Http\Promise\Promise;
-use Psr\SimpleCache\CacheInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use XGraphQL\DelegateExecution\ErrorsReporterInterface;
 use XGraphQL\DelegateExecution\Execution;
 use XGraphQL\HttpSchema\Exception\RuntimeException;
+use XGraphQL\SchemaCache\SchemaCache;
 
 final readonly class HttpSchemaFactory
 {
@@ -32,20 +32,17 @@ final readonly class HttpSchemaFactory
     public static function createFromSDL(
         HttpDelegator $delegator,
         string $sdl,
-        CacheInterface $cache = null,
+        SchemaCache $cache = null,
         ErrorsReporterInterface $errorsReporter = null,
     ): Schema {
-        $schemaCache = null !== $cache ? new SchemaCache($cache) : null;
-        $schema = $schemaCache?->loadSchemaFromCache();
+        $schema = $cache?->load();
 
         if (null === $schema) {
             $schema = BuildSchema::build($sdl);
-            $schemaCache?->saveSchemaToCache($schema);
+            $cache?->save($schema);
         }
 
-        Execution::delegate($schema, $delegator, $errorsReporter);
-
-        return $schema;
+        return Execution::delegate($schema, $delegator, $errorsReporter);
     }
 
     /**
@@ -59,15 +56,14 @@ final readonly class HttpSchemaFactory
      */
     public static function createFromIntrospectionQuery(
         HttpDelegator $delegator,
-        CacheInterface $cache = null,
+        SchemaCache $cache = null,
         string $introspectionQuery = null,
         ErrorsReporterInterface $errorsReporter = null
     ): Schema {
-        $introspectionQuery ??= Introspection::getIntrospectionQuery();
-        $schemaCache = null !== $cache ? new SchemaCache($cache) : null;
-        $schema = $schemaCache?->loadSchemaFromCache();
+        $schema = $cache?->load();
 
         if (null === $schema) {
+            $introspectionQuery ??= Introspection::getIntrospectionQuery();
             $promiseOrResult = $delegator->executeQuery($introspectionQuery);
 
             if ($promiseOrResult instanceof Promise) {
@@ -82,11 +78,9 @@ final readonly class HttpSchemaFactory
             }
 
             $schema = BuildClientSchema::build($result->data);
-            $schemaCache?->saveSchemaToCache($schema);
+            $cache?->save($schema);
         }
 
-        Execution::delegate($schema, $delegator, $errorsReporter);
-
-        return $schema;
+        return Execution::delegate($schema, $delegator, $errorsReporter);
     }
 }

@@ -5,18 +5,22 @@ declare(strict_types=1);
 namespace XGraphQL\HttpSchema\Test;
 
 use GraphQL\Error\Error;
+use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Schema;
 use PHPUnit\Framework\TestCase;
 use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Cache\Psr16Cache;
+use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Component\HttpClient\HttplugClient;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Psr18Client;
 use Symfony\Component\HttpClient\Response\MockResponse;
+use Symfony\Component\HttpClient\TraceableHttpClient;
 use XGraphQL\HttpSchema\Exception\RuntimeException;
 use XGraphQL\HttpSchema\HttpDelegator;
 use XGraphQL\HttpSchema\HttpSchemaFactory;
-use XGraphQL\HttpSchema\SchemaCache;
+use XGraphQL\SchemaCache\SchemaCache;
 
 class HttpSchemaFactoryTest extends TestCase
 {
@@ -53,7 +57,9 @@ GQL,
     public function testCreateSchemaFromSDLWithCache(): void
     {
         $delegator = new HttpDelegator('https://countries.trevorblades.com/');
-        $cache = new Psr16Cache(new ArrayAdapter());
+        $arrayCache = new ArrayAdapter();
+        $schemaCache = new SchemaCache(new Psr16Cache($arrayCache));
+
         $sdl = <<<'GQL'
 schema {
   query: Query
@@ -63,16 +69,16 @@ type Query {
   dummy: String!
 }
 GQL;
-        $this->assertFalse($cache->has(SchemaCache::CACHE_KEY));
+        $this->assertEmpty($arrayCache->getValues());
 
-        $schema = HttpSchemaFactory::createFromSDL($delegator, $sdl, $cache);
+        $schema = HttpSchemaFactory::createFromSDL($delegator, $sdl, $schemaCache);
 
-        $this->assertTrue($cache->has(SchemaCache::CACHE_KEY));
-        $this->assertInstanceOf(Schema::class, $schema);
+        $this->assertNotEmpty($arrayCache->getValues());
 
-        $schemaFromCache = HttpSchemaFactory::createFromSDL($delegator, $sdl, $cache);
+        $schemaFromCache = HttpSchemaFactory::createFromSDL($delegator, $sdl, $schemaCache);
 
-        $this->assertNotSame($schema, $schemaFromCache);
+        $this->assertInstanceOf(ObjectType::class, $schema->getConfig()->query);
+        $this->assertIsCallable($schemaFromCache->getConfig()->query);
     }
 
     public function testCreateSchemaFromIntrospectionQuery(): void
@@ -85,19 +91,23 @@ GQL;
 
     public function testCreateSchemaFromIntrospectionQueryWithCache(): void
     {
-        $delegator = new HttpDelegator('https://countries.trevorblades.com/');
-        $cache = new Psr16Cache(new ArrayAdapter());
+        $client = new TraceableHttpClient(HttpClient::create());
+        $delegator = new HttpDelegator('https://countries.trevorblades.com/', client: new HttplugClient($client));
+        $arrayCache = new ArrayAdapter();
+        $schemaCache = new SchemaCache(new Psr16Cache($arrayCache));
 
-        $this->assertFalse($cache->has(SchemaCache::CACHE_KEY));
+        $this->assertEmpty($arrayCache->getValues());
 
-        $schema = HttpSchemaFactory::createFromIntrospectionQuery($delegator, $cache);
+        $schema = HttpSchemaFactory::createFromIntrospectionQuery($delegator, $schemaCache);
 
-        $this->assertTrue($cache->has(SchemaCache::CACHE_KEY));
-        $this->assertInstanceOf(Schema::class, $schema);
+        $this->assertCount(1, $client->getTracedRequests());
+        $this->assertNotEmpty($arrayCache->getValues());
 
-        $schemaFromCache = HttpSchemaFactory::createFromIntrospectionQuery($delegator, $cache);
+        $schemaFromCache = HttpSchemaFactory::createFromIntrospectionQuery($delegator, $schemaCache);
 
-        $this->assertNotSame($schema, $schemaFromCache);
+        $this->assertCount(1, $client->getTracedRequests());
+        $this->assertInstanceOf(ObjectType::class, $schema->getConfig()->query);
+        $this->assertIsCallable($schemaFromCache->getConfig()->query);
     }
 
     public function testCreateSchemaFromInvalidSDL(): void
