@@ -38,6 +38,10 @@ final readonly class HttpSchemaFactory
         $schema = $cache?->load();
 
         if (null === $schema) {
+            if (is_file($sdl) && is_readable($sdl)) {
+                $sdl = file_get_contents($sdl);
+            }
+
             $schema = BuildSchema::build($sdl);
             $cache?->save($schema);
         }

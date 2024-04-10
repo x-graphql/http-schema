@@ -54,6 +54,20 @@ GQL,
         $this->assertInstanceOf(Schema::class, $schema);
     }
 
+    public function testCreateSchemaFromSDLFile(): void
+    {
+        $delegator = new HttpDelegator('https://countries.trevorblades.com/');
+        $schema = HttpSchemaFactory::createFromSDL(
+            $delegator,
+            __DIR__ . '/fixture/schema.graphql'
+        );
+
+        $this->assertInstanceOf(Schema::class, $schema);
+
+        $this->assertTrue($schema->getQueryType()->hasField('countries'));
+        $this->assertTrue($schema->hasType('Country'));
+    }
+
     public function testCreateSchemaFromSDLWithCache(): void
     {
         $delegator = new HttpDelegator('https://countries.trevorblades.com/');
