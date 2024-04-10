@@ -63,6 +63,9 @@ GQL,
         );
 
         $this->assertInstanceOf(Schema::class, $schema);
+
+        $this->assertTrue($schema->getQueryType()->hasField('countries'));
+        $this->assertTrue($schema->hasType('Country'));
     }
 
     public function testCreateSchemaFromSDLWithCache(): void
