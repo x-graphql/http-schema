@@ -49,7 +49,7 @@ final readonly class HttpDelegator implements DelegatorInterface
     ) {
         $this->requestFactory = $requestFactory ?? Psr17FactoryDiscovery::findRequestFactory();
         $this->streamFactory = $streamFactory ?? Psr17FactoryDiscovery::findStreamFactory();
-        $this->promiseAdapter = $promiseAdapter ?? Executor::getPromiseAdapter();
+        $this->promiseAdapter = $promiseAdapter ?? Executor::getDefaultPromiseAdapter();
 
         if (null === $client) {
             try {
